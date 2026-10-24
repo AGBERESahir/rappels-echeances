@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rappels d’échéances</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  ul { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: .6rem; }
+  li { background: var(--paper); border-left: 6px solid var(--line); padding: .7rem 1rem; display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  li.late { border-left-color: var(--danger); }
+  li.soon { border-left-color: var(--sun); }
+  li .t { font-weight: 700; }
+  li .s { color: var(--muted); font-size: .95rem; }
+  li.late .s { color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ne rate plus une échéance</h1>
+  <p class="lead">Carte d’identité, assurance, facture, impôts : note la date, puis exporte vers l’agenda de ton téléphone pour recevoir l’alerte à l’avance.</p>
+
+  <form id="f">
+    <div class="row">
+      <div><label for="titre">Quoi ?</label><input id="titre" required placeholder="Renouvellement de la carte d’identité"></div>
+      <div><label for="date">Échéance</label><input id="date" type="date" required></div>
+      <div><label for="avant">Prévenir (jours avant)</label><input id="avant" type="number" min="0" value="14"></div>
+    </div>
+    <div class="actions"><button type="submit">Ajouter le rappel</button><button type="button" class="ghost" id="export">Exporter vers l’agenda (.ics)</button></div>
+  </form>
+  <ul id="list" aria-live="polite"></ul>
+  <p class="note">Les rappels sont enregistrés dans ce navigateur uniquement. L’export .ics s’ouvre dans Google Agenda, Apple Calendrier ou Outlook, qui envoient ensuite les notifications.</p>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'rappels-v1';
+let items = [];
+try { items = JSON.parse(localStorage.getItem(KEY)) || []; } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch {} };
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const daysLeft = iso => Math.round((new Date(iso + 'T00:00:00') - today()) / 864e5);
+
+function status(it) {
+  const n = daysLeft(it.date);
+  if (n < 0) return { cls: 'late', text: `En retard de ${-n} jour${-n > 1 ? 's' : ''}` };
+  if (n === 0) return { cls: 'soon', text: 'C’est aujourd’hui' };
+  return { cls: n <= it.avant ? 'soon' : '', text: `Dans ${n} jour${n > 1 ? 's' : ''}` };
+}
+
+function draw() {
+  const list = $('list');
+  if (!items.length) { list.innerHTML = '<li class="empty" style="border:0;background:none">Aucun rappel. Ajoute ta première échéance ci-dessus.</li>'; return; }
+  items.sort((a, b) => a.date.localeCompare(b.date));
+  list.replaceChildren(...items.map((it, i) => {
+    const st = status(it);
+    const li = document.createElement('li'); li.className = st.cls;
+    const info = document.createElement('div');
+    const t = document.createElement('div'); t.className = 't'; t.textContent = it.titre;
+    const s = document.createElement('div'); s.className = 's';
+    s.textContent = `${new Date(it.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · ${st.text}`;
+    info.append(t, s);
+    const del = document.createElement('button'); del.className = 'danger'; del.type = 'button'; del.textContent = 'Supprimer';
+    del.setAttribute('aria-label', 'Supprimer ' + it.titre);
+    del.addEventListener('click', () => { items.splice(i, 1); save(); draw(); });
+    li.append(info, del);
+    return li;
+  }));
+}
+
+$('f').addEventListener('submit', e => {
+  e.preventDefault();
+  items.push({ titre: $('titre').value.trim(), date: $('date').value, avant: parseInt($('avant').value, 10) || 0 });
+  save(); e.target.reset(); $('avant').value = 14; draw();
+});
+
+const esc = s => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+$('export').addEventListener('click', () => {
+  if (!items.length) return;
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//petits-outils//rappels//FR'];
+  items.forEach((it, i) => {
+    const d = it.date.replace(/-/g, '');
+    lines.push('BEGIN:VEVENT', `UID:rappel-${i}-${d}@petits-outils`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d}`,
+      `SUMMARY:${esc(it.titre)}`, 'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(it.titre)}`,
+      `TRIGGER:-P${it.avant}D`, 'END:VALARM', 'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'echeances.ics'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+draw();
+</script>
+</body>
+</html>

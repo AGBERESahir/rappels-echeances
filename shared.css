@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+:root {
+  --bg: #eef2f4; --paper: #ffffff; --ink: #13243a; --muted: #51647a;
+  --line: #c9d4dc; --accent: #0b7a5c; --accent-ink: #ffffff; --sun: #f2b705; --danger: #b3261e;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0e1824; --paper: #16263a; --ink: #e8eef4; --muted: #9db0c3; --line: #2c4059; --accent: #3fc79d; --accent-ink: #0e1824; --danger: #ff8a80; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1.0625rem/1.55 'Atkinson Hyperlegible', system-ui, sans-serif; }
+.wrap { max-width: 44rem; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+nav { display: flex; gap: 1.25rem; flex-wrap: wrap; border-bottom: 2px solid var(--line); padding-bottom: .75rem; margin-bottom: 1.75rem; }
+nav a { color: var(--muted); text-decoration: none; padding: .25rem 0; }
+nav a[aria-current] { color: var(--ink); font-weight: 700; border-bottom: 3px solid var(--sun); }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 .5rem; }
+.lead { color: var(--muted); margin: 0 0 1.75rem; max-width: 60ch; }
+label { display: block; font-weight: 700; margin: 1rem 0 .25rem; }
+input, select, textarea, button { font: inherit; color: inherit; }
+input, select, textarea { width: 100%; padding: .6rem .7rem; background: var(--paper); border: 2px solid var(--line); border-radius: 6px; }
+textarea { min-height: 7rem; resize: vertical; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+button { cursor: pointer; border: 2px solid var(--accent); background: var(--accent); color: var(--accent-ink); padding: .6rem 1.1rem; border-radius: 6px; font-weight: 700; }
+button.ghost { background: transparent; color: var(--accent); }
+button.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.row { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.note { color: var(--muted); font-size: .95rem; border-left: 4px solid var(--sun); padding-left: .75rem; margin-top: 2rem; }
+.empty { color: var(--muted); padding: 1.25rem 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
